@@ -2,10 +2,10 @@
 
 namespace App\Jobs;
 
+use App\Ai\Agents\ReelPlaceExtractor;
 use App\Models\Place;
 use App\Models\Reel;
 use App\Models\TripCity;
-use App\Services\ClaudePlaceExtractor;
 use App\Services\InstagramDownloader;
 use App\Services\WhisperTranscriber;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -39,7 +39,7 @@ class ProcessReel implements ShouldQueue
     public function handle(
         InstagramDownloader $downloader,
         WhisperTranscriber $transcriber,
-        ClaudePlaceExtractor $extractor,
+        ReelPlaceExtractor $extractor,
     ): void {
         $reel = $this->reel;
 
@@ -92,7 +92,7 @@ class ProcessReel implements ShouldQueue
         // Compare accent-folded (Str::ascii) so "Malaga" matches "Málaga".
         $needle = Str::lower(Str::ascii(trim($cityGuess)));
 
-        return TripCity::all()
+        return $this->reel->trip?->tripCities
             ->first(fn (TripCity $city) => Str::lower(Str::ascii($city->name)) === $needle);
     }
 }
