@@ -12,16 +12,19 @@ class Trip extends Model
 
     protected $casts = ['start_date' => 'date'];
 
+    /** @return BelongsTo<User, $this> */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
+    /** @return HasMany<TripCity, $this> */
     public function tripCities(): HasMany
     {
         return $this->hasMany(TripCity::class)->orderBy('position');
     }
 
+    /** @return HasMany<Reel, $this> */
     public function reels(): HasMany
     {
         return $this->hasMany(Reel::class);

@@ -18,6 +18,7 @@ class User extends Authenticatable
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
 
+    /** @return HasMany<Trip, $this> */
     public function trips(): HasMany
     {
         return $this->hasMany(Trip::class);

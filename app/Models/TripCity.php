@@ -12,11 +12,13 @@ class TripCity extends Model
 
     protected $casts = ['arrival_date' => 'date'];
 
+    /** @return BelongsTo<Trip, $this> */
     public function trip(): BelongsTo
     {
         return $this->belongsTo(Trip::class);
     }
 
+    /** @return HasMany<Place, $this> */
     public function places(): HasMany
     {
         return $this->hasMany(Place::class);

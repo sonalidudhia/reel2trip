@@ -15,11 +15,13 @@ class Place extends Model
         'dismissed' => 'boolean',
     ];
 
+    /** @return BelongsTo<Reel, $this> */
     public function reel(): BelongsTo
     {
         return $this->belongsTo(Reel::class);
     }
 
+    /** @return BelongsTo<TripCity, $this> */
     public function tripCity(): BelongsTo
     {
         return $this->belongsTo(TripCity::class);

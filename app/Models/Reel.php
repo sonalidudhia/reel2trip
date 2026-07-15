@@ -22,11 +22,13 @@ class Reel extends Model
 
     public const STATUS_FAILED = 'failed';
 
+    /** @return BelongsTo<Trip, $this> */
     public function trip(): BelongsTo
     {
         return $this->belongsTo(Trip::class);
     }
 
+    /** @return HasMany<Place, $this> */
     public function places(): HasMany
     {
         return $this->hasMany(Place::class);

@@ -58,6 +58,7 @@ class ReelPlaceExtractor implements Agent, HasStructuredOutput
         ];
     }
 
+    /** @return array<int, array<string, mixed>> */
     public function extract(Reel $reel): array
     {
         $text = $reel->combinedText();
@@ -80,7 +81,11 @@ class ReelPlaceExtractor implements Agent, HasStructuredOutput
         return $this->validated($places);
     }
 
-    /** One retry, with the prior error fed back to the model, via Ollama's generic JSON mode. */
+    /**
+     * One retry, with the prior error fed back to the model, via Ollama's generic JSON mode.
+     *
+     * @return array<int, array<string, mixed>>
+     */
     private function fallbackRawJson(string $text, string $priorError): array
     {
         $attempt = $this->promptOllamaForJson($text);
@@ -101,6 +106,7 @@ class ReelPlaceExtractor implements Agent, HasStructuredOutput
         return $attempt;
     }
 
+    /** @return array<int, array<string, mixed>>|null */
     private function promptOllamaForJson(string $userText): ?array
     {
         $response = Http::timeout(120)
@@ -124,7 +130,12 @@ class ReelPlaceExtractor implements Agent, HasStructuredOutput
             : null;
     }
 
-    /** Drop entries that don't match the schema instead of failing the whole extraction. */
+    /**
+     * Drop entries that don't match the schema instead of failing the whole extraction.
+     *
+     * @param  array<int, mixed>  $places
+     * @return array<int, array<string, mixed>>
+     */
     private function validated(array $places): array
     {
         $valid = [];

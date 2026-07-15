@@ -4,6 +4,7 @@ namespace App\Services\Geocoding;
 
 final readonly class GeocodeResult
 {
+    /** @param  array<int, string>|null  $openingHours */
     public function __construct(
         public float $lat,
         public float $lng,

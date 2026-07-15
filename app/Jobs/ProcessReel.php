@@ -25,7 +25,11 @@ class ProcessReel implements ShouldQueue
 
     public int $tries = 3;
 
-    /** Backoff between retries — IG rate limits are the usual failure. */
+    /**
+     * Backoff between retries — IG rate limits are the usual failure.
+     *
+     * @return array<int, int>
+     */
     public function backoff(): array
     {
         return [60, 300, 900];

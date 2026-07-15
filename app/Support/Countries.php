@@ -4,7 +4,11 @@ namespace App\Support;
 
 class Countries
 {
-    /** Plain list for a datalist, not a hardcoded enum — country isn't a closed set here. */
+    /**
+     * Plain list for a datalist, not a hardcoded enum — country isn't a closed set here.
+     *
+     * @return array<int, string>
+     */
     public static function all(): array
     {
         return [
