@@ -25,10 +25,10 @@ class AppServiceProvider extends ServiceProvider
         $path = getenv('PATH') ?: '';
         foreach (['/opt/homebrew/bin', '/opt/homebrew/sbin', '/usr/local/bin'] as $dir) {
             if (! str_contains($path, $dir)) {
-                $path = $dir . ':' . $path;
+                $path = $dir.':'.$path;
             }
         }
-        putenv('PATH=' . $path);
+        putenv('PATH='.$path);
 
         // WAL mode lets the queue worker and web requests hit sqlite
         // concurrently without "database is locked" errors.

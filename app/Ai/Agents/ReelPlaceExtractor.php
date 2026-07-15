@@ -89,8 +89,8 @@ class ReelPlaceExtractor implements Agent, HasStructuredOutput
             return $attempt;
         }
 
-        $retryPrompt = $text . "\n\n---\nYour previous response could not be used ({$priorError}). "
-            . 'Respond again with ONLY the JSON object described above, no markdown fences, no preamble.';
+        $retryPrompt = $text."\n\n---\nYour previous response could not be used ({$priorError}). "
+            .'Respond again with ONLY the JSON object described above, no markdown fences, no preamble.';
 
         $attempt = $this->promptOllamaForJson($retryPrompt);
 
@@ -104,7 +104,7 @@ class ReelPlaceExtractor implements Agent, HasStructuredOutput
     private function promptOllamaForJson(string $userText): ?array
     {
         $response = Http::timeout(120)
-            ->post(rtrim(config('services.ollama.base_url'), '/') . '/api/chat', [
+            ->post(rtrim(config('services.ollama.base_url'), '/').'/api/chat', [
                 'model' => config('services.ollama.model'),
                 'stream' => false,
                 'format' => 'json',

@@ -20,11 +20,11 @@ class NominatimGeocoder implements Geocoder
         $this->throttle();
 
         $response = Http::timeout(30)
-            ->withHeaders(['User-Agent' => 'reel2trip/1.0 (' . config('mail.from.address') . ')'])
+            ->withHeaders(['User-Agent' => 'reel2trip/1.0 ('.config('mail.from.address').')'])
             ->get('https://nominatim.openstreetmap.org/search', [
-                'q'      => trim($place->name . ' ' . ($place->city_guess ?? '')),
+                'q' => trim($place->name.' '.($place->city_guess ?? '')),
                 'format' => 'json',
-                'limit'  => 1,
+                'limit' => 1,
             ]);
 
         $response->throw();

@@ -41,7 +41,7 @@ return [
 
     'ollama' => [
         'base_url' => env('OLLAMA_URL', 'http://127.0.0.1:11434'),
-        'model'    => env('OLLAMA_MODEL', 'llama3.2:3b'),
+        'model' => env('OLLAMA_MODEL', 'llama3.2:3b'),
     ],
 
     'openai' => [
@@ -49,7 +49,7 @@ return [
     ],
 
     'whisper' => [
-        'bin'        => env('WHISPER_BIN', 'whisper-cli'),
+        'bin' => env('WHISPER_BIN', 'whisper-cli'),
         'model_path' => env('WHISPER_MODEL', env('WHISPER_MODEL_PATH', storage_path('app/whisper-models/ggml-base.en.bin'))),
     ],
 

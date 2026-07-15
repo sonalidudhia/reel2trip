@@ -18,13 +18,13 @@ class InstagramDownloader
     public function download(Reel $reel): void
     {
         $shortcode = $reel->shortcode ?? Reel::shortcodeFromUrl($reel->url);
-        $dir       = Storage::path('reels');
+        $dir = Storage::path('reels');
 
         if (! is_dir($dir)) {
             mkdir($dir, 0755, true);
         }
 
-        $outputTemplate = $dir . '/' . $shortcode . '.%(ext)s';
+        $outputTemplate = $dir.'/'.$shortcode.'.%(ext)s';
 
         $args = [
             'yt-dlp',
@@ -43,25 +43,25 @@ class InstagramDownloader
         $result = Process::timeout(180)->run($args);
 
         if (! $result->successful()) {
-            throw new RuntimeException('yt-dlp failed: ' . $result->errorOutput());
+            throw new RuntimeException('yt-dlp failed: '.$result->errorOutput());
         }
 
         // Find what we got
-        $video = collect(glob($dir . '/' . $shortcode . '.*'))
+        $video = collect(glob($dir.'/'.$shortcode.'.*'))
             ->first(fn ($f) => preg_match('/\.(mp4|mkv|webm)$/', $f));
 
-        $infoJson = $dir . '/' . $shortcode . '.info.json';
-        $caption  = null;
+        $infoJson = $dir.'/'.$shortcode.'.info.json';
+        $caption = null;
 
         if (file_exists($infoJson)) {
-            $meta    = json_decode(file_get_contents($infoJson), true);
+            $meta = json_decode(file_get_contents($infoJson), true);
             $caption = $meta['description'] ?? null;
         }
 
         $reel->update([
-            'shortcode'  => $shortcode,
+            'shortcode' => $shortcode,
             'video_path' => $video,
-            'caption'    => $caption,
+            'caption' => $caption,
         ]);
     }
 }

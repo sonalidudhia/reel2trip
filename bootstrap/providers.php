@@ -1,7 +1,11 @@
 <?php
 
+use App\Providers\AppServiceProvider;
+use App\Providers\Filament\AdminPanelProvider;
+use App\Providers\GeocodingServiceProvider;
+
 return [
-    App\Providers\AppServiceProvider::class,
-    App\Providers\GeocodingServiceProvider::class,
-    App\Providers\Filament\AdminPanelProvider::class,
+    AppServiceProvider::class,
+    GeocodingServiceProvider::class,
+    AdminPanelProvider::class,
 ];

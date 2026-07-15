@@ -11,7 +11,7 @@ function makeTripWithReelAndPlace(User $user): array
 {
     $trip = Trip::create(['user_id' => $user->id, 'name' => 'Trip']);
     $reel = $trip->reels()->create([
-        'url' => 'https://instagram.com/reel/' . uniqid(),
+        'url' => 'https://instagram.com/reel/'.uniqid(),
         'shortcode' => uniqid(),
         'status' => Reel::STATUS_DONE,
     ]);

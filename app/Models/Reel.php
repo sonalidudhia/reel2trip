@@ -10,12 +10,17 @@ class Reel extends Model
 {
     protected $guarded = [];
 
-    public const STATUS_PENDING      = 'pending';
-    public const STATUS_DOWNLOADING  = 'downloading';
+    public const STATUS_PENDING = 'pending';
+
+    public const STATUS_DOWNLOADING = 'downloading';
+
     public const STATUS_TRANSCRIBING = 'transcribing';
-    public const STATUS_EXTRACTING   = 'extracting';
-    public const STATUS_DONE         = 'done';
-    public const STATUS_FAILED       = 'failed';
+
+    public const STATUS_EXTRACTING = 'extracting';
+
+    public const STATUS_DONE = 'done';
+
+    public const STATUS_FAILED = 'failed';
 
     public function trip(): BelongsTo
     {
@@ -31,12 +36,12 @@ class Reel extends Model
     public function combinedText(): string
     {
         return collect([
-            'CAPTION:'    => $this->caption,
+            'CAPTION:' => $this->caption,
             'TRANSCRIPT:' => $this->transcript,
             'ON-SCREEN TEXT:' => $this->ocr_text,
         ])
             ->filter()
-            ->map(fn ($text, $label) => $label . "\n" . trim($text))
+            ->map(fn ($text, $label) => $label."\n".trim($text))
             ->implode("\n\n");
     }
 

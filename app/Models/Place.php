@@ -11,8 +11,8 @@ class Place extends Model
 
     protected $casts = [
         'opening_hours' => 'array',
-        'must_do'       => 'boolean',
-        'dismissed'     => 'boolean',
+        'must_do' => 'boolean',
+        'dismissed' => 'boolean',
     ];
 
     public function reel(): BelongsTo

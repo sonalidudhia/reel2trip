@@ -3,7 +3,6 @@
 namespace App\Jobs;
 
 use App\Ai\Agents\ReelPlaceExtractor;
-use App\Models\Place;
 use App\Models\Reel;
 use App\Models\TripCity;
 use App\Services\InstagramDownloader;
@@ -32,9 +31,7 @@ class ProcessReel implements ShouldQueue
         return [60, 300, 900];
     }
 
-    public function __construct(public Reel $reel)
-    {
-    }
+    public function __construct(public Reel $reel) {}
 
     public function handle(
         InstagramDownloader $downloader,
@@ -60,12 +57,12 @@ class ProcessReel implements ShouldQueue
 
         foreach ($extractor->extract($reel->refresh()) as $extracted) {
             $place = $reel->places()->create([
-                'name'         => $extracted['name'],
-                'city_guess'   => $extracted['city_guess'] ?? null,
-                'category'     => $extracted['category'] ?? 'sight',
-                'description'  => $extracted['description'] ?? null,
-                'tip'          => $extracted['tip'] ?? null,
-                'price_hint'   => $extracted['price_hint'] ?? null,
+                'name' => $extracted['name'],
+                'city_guess' => $extracted['city_guess'] ?? null,
+                'category' => $extracted['category'] ?? 'sight',
+                'description' => $extracted['description'] ?? null,
+                'tip' => $extracted['tip'] ?? null,
+                'price_hint' => $extracted['price_hint'] ?? null,
                 'trip_city_id' => $this->matchCity($extracted['city_guess'] ?? null)?->id,
             ]);
 
@@ -79,7 +76,7 @@ class ProcessReel implements ShouldQueue
     {
         $this->reel->update([
             'status' => Reel::STATUS_FAILED,
-            'error'  => Str::limit($e->getMessage(), 500),
+            'error' => Str::limit($e->getMessage(), 500),
         ]);
     }
 

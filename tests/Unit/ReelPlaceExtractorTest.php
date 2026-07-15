@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Http;
 function makeReelWithCaption(string $caption): Reel
 {
     return Reel::create([
-        'url' => 'https://instagram.com/reel/' . uniqid(),
+        'url' => 'https://instagram.com/reel/'.uniqid(),
         'shortcode' => uniqid(),
         'status' => Reel::STATUS_DONE,
         'caption' => $caption,

@@ -1,14 +1,14 @@
 <?php
 
-use App\Models\Reel;
 use App\Models\Place;
+use App\Models\Reel;
 use App\Services\Geocoding\NominatimGeocoder;
 use Illuminate\Support\Facades\Http;
 
 function makePlace(array $attributes): Place
 {
     return Reel::create([
-        'url' => 'https://instagram.com/reel/' . uniqid(),
+        'url' => 'https://instagram.com/reel/'.uniqid(),
         'shortcode' => uniqid(),
         'status' => Reel::STATUS_DONE,
     ])->places()->create($attributes);

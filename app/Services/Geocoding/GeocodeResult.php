@@ -12,6 +12,5 @@ final readonly class GeocodeResult
         public ?int $priceLevel = null,
         public ?array $openingHours = null,
         public ?string $googlePlaceId = null,
-    ) {
-    }
+    ) {}
 }

@@ -41,7 +41,7 @@ class WhisperTranscriber
         ]);
 
         if (! $result->successful()) {
-            throw new RuntimeException('ffmpeg failed: ' . $result->errorOutput());
+            throw new RuntimeException('ffmpeg failed: '.$result->errorOutput());
         }
 
         $reel->update(['transcript' => $this->transcribeLocal($audioPath)]);
@@ -64,7 +64,7 @@ class WhisperTranscriber
         ]);
 
         if (! $result->successful()) {
-            throw new RuntimeException('whisper-cli failed: ' . $result->errorOutput());
+            throw new RuntimeException('whisper-cli failed: '.$result->errorOutput());
         }
 
         return trim($result->output());
