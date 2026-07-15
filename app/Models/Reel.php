@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Reel extends Model
@@ -15,6 +16,11 @@ class Reel extends Model
     public const STATUS_EXTRACTING   = 'extracting';
     public const STATUS_DONE         = 'done';
     public const STATUS_FAILED       = 'failed';
+
+    public function trip(): BelongsTo
+    {
+        return $this->belongsTo(Trip::class);
+    }
 
     public function places(): HasMany
     {
