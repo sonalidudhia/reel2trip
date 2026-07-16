@@ -10,6 +10,7 @@ use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
+use Filament\Notifications\Notification;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 
@@ -59,9 +60,12 @@ class ReelsTable
                             ->required(),
                     ])
                     ->action(function (array $data): void {
-                        $urls = collect(preg_split('/\s+/', $data['urls']))
+                        $urls = collect(preg_split('/\s+/', trim($data['urls'])))
                             ->filter(fn ($url) => str_contains($url, 'instagram.com'))
                             ->unique();
+
+                        $queued = 0;
+                        $alreadyDone = 0;
 
                         foreach ($urls as $url) {
                             $reel = Reel::firstOrCreate(
@@ -71,8 +75,28 @@ class ReelsTable
 
                             if ($reel->wasRecentlyCreated || $reel->status === Reel::STATUS_FAILED) {
                                 ProcessReel::dispatch($reel);
+                                $queued++;
+                            } else {
+                                $alreadyDone++;
                             }
                         }
+
+                        if ($urls->isEmpty()) {
+                            Notification::make()
+                                ->title('No Instagram URLs found in that text')
+                                ->warning()
+                                ->send();
+
+                            return;
+                        }
+
+                        Notification::make()
+                            ->title($queued > 0
+                                ? "Queued {$queued} reel(s) for processing"
+                                : 'Nothing queued')
+                            ->body($alreadyDone > 0 ? "{$alreadyDone} URL(s) were already processed (or in progress) and were skipped." : null)
+                            ->success()
+                            ->send();
                     }),
             ])
             ->recordActions([
