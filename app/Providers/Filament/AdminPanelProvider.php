@@ -29,6 +29,9 @@ class AdminPanelProvider extends PanelProvider
             ->path('app')
             ->login()
             ->registration()
+            // v4 defaults to read-only relation managers on View pages (Create/Edit/Delete
+            // all hidden there); this app's View pages ARE the management UI for cities/places.
+            ->readOnlyRelationManagersOnResourceViewPagesByDefault(false)
             ->colors([
                 'primary' => Color::Amber,
             ])
