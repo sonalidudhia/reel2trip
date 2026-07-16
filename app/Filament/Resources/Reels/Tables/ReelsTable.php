@@ -52,6 +52,7 @@ class ReelsTable
                         Select::make('trip_id')
                             ->label('Trip')
                             ->options(fn () => Trip::where('user_id', auth()->id())->pluck('name', 'id'))
+                            ->default(fn () => Trip::where('user_id', auth()->id())->latest()->value('id'))
                             ->required(),
                         Textarea::make('urls')
                             ->label('Reel URLs (one per line)')
