@@ -16,6 +16,8 @@ class ListPlaces extends ListRecords
         return [
             'active' => Tab::make('Active')
                 ->modifyQueryUsing(fn (Builder $query) => $query->where('dismissed', false)),
+            'visiting' => Tab::make('Visiting')
+                ->modifyQueryUsing(fn (Builder $query) => $query->where('dismissed', false)->where('selected', true)),
             'dismissed' => Tab::make('Dismissed')
                 ->modifyQueryUsing(fn (Builder $query) => $query->where('dismissed', true)),
         ];

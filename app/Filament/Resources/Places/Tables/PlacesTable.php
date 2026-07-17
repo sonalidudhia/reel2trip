@@ -25,7 +25,8 @@ class PlacesTable
                 TextColumn::make('name')->searchable(),
                 TextColumn::make('category'),
                 TextColumn::make('tripCity.name')->label('City'),
-                ToggleColumn::make('must_do'),
+                ToggleColumn::make('selected')->label('Visiting'),
+                ToggleColumn::make('must_do')->disabled(fn ($record) => ! $record->selected),
                 ToggleColumn::make('dismissed'),
             ])
             ->filters([

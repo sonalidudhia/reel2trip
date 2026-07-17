@@ -2,7 +2,6 @@
 
 namespace App\Filament\Resources\Trips\Pages;
 
-use App\Filament\Pages\MyPlaces;
 use App\Filament\Resources\Trips\TripResource;
 use Filament\Actions\Action;
 use Filament\Actions\EditAction;
@@ -21,15 +20,6 @@ class ViewTrip extends ViewRecord
                 ->icon(Heroicon::ArrowLeft)
                 ->color('gray')
                 ->url(fn () => static::getResource()::getUrl('index')),
-            Action::make('myPlaces')
-                ->label('My Places')
-                ->icon(Heroicon::MapPin)
-                ->url(fn () => MyPlaces::getUrl(['trip' => $this->record])),
-            Action::make('selectedPlaces')
-                ->label('My Selected Places')
-                ->icon(Heroicon::Star)
-                ->color('gray')
-                ->url(fn () => MyPlaces::getUrl(['trip' => $this->record, 'filter' => 'visiting'])),
             EditAction::make(),
         ];
     }
