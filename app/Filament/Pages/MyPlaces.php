@@ -2,11 +2,14 @@
 
 namespace App\Filament\Pages;
 
+use App\Filament\Resources\Trips\TripResource;
 use App\Models\Place;
 use App\Models\Trip;
 use App\Models\TripCity;
+use Filament\Actions\Action;
 use Filament\Pages\Page;
 use Filament\Panel;
+use Filament\Support\Icons\Heroicon;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Collection as SupportCollection;
 
@@ -31,11 +34,33 @@ class MyPlaces extends Page
         abort_unless($trip->user_id === auth()->id(), 404);
 
         $this->trip = $trip;
+
+        $requestedFilter = request()->query('filter');
+
+        if (in_array($requestedFilter, ['visiting', 'must_do'], true)) {
+            $this->filter = $requestedFilter;
+        }
     }
 
     public function setFilter(string $filter): void
     {
         $this->filter = $filter;
+    }
+
+    protected function getHeaderActions(): array
+    {
+        return [
+            Action::make('backToTrip')
+                ->label('Back to trip')
+                ->icon(Heroicon::ArrowLeft)
+                ->color('gray')
+                ->url(fn () => TripResource::getUrl('view', ['record' => $this->trip])),
+            Action::make('selectedPlaces')
+                ->label('My Selected Places')
+                ->icon(Heroicon::Star)
+                ->visible(fn () => $this->filter !== 'visiting')
+                ->url(fn () => static::getUrl(['trip' => $this->trip, 'filter' => 'visiting'])),
+        ];
     }
 
     public function toggleSelected(int $placeId): void
