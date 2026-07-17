@@ -13,7 +13,18 @@ class Place extends Model
         'opening_hours' => 'array',
         'must_do' => 'boolean',
         'dismissed' => 'boolean',
+        'selected' => 'boolean',
     ];
+
+    /** must_do only makes sense for a place you're actually visiting. */
+    protected static function booted(): void
+    {
+        static::saving(function (Place $place) {
+            if (! $place->selected) {
+                $place->must_do = false;
+            }
+        });
+    }
 
     /** @return BelongsTo<Reel, $this> */
     public function reel(): BelongsTo
