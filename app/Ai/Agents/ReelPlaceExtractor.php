@@ -177,6 +177,7 @@ class ReelPlaceExtractor implements Agent, HasStructuredOutput
         - One entry per distinct place. A reel listing "5 must-eat spots in Porto" yields 5 entries.
         - "name" must be Google-Maps-searchable: "Manteigaria" not "this pastel de nata place 😍".
         - General advice with no place attached (e.g. "always validate metro tickets") gets category "tip" and name = short summary of the tip.
+        - Tips still get a "city_guess" whenever the reel says or clearly implies which city the advice is for — e.g. "In Barcelona, always validate your metro ticket" is city_guess "Barcelona", not null. Only leave it null if the reel never says which city the tip applies to.
         - If the text contains no places or tips at all, return {"places": []}.
         - Never invent places that are not in the text.
         PROMPT;
