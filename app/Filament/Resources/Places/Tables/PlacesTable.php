@@ -31,7 +31,8 @@ class PlacesTable
             ->filters([
                 SelectFilter::make('trip_city_id')
                     ->label('City')
-                    ->relationship('tripCity', 'name'),
+                    ->options(fn () => TripCity::whereHas('trip', fn ($q) => $q->where('user_id', auth()->id()))->pluck('name', 'id'))
+                    ->searchable(),
                 SelectFilter::make('category')
                     ->options([
                         'food' => 'Food',
@@ -46,7 +47,6 @@ class PlacesTable
                         true: fn (Builder $query) => $query->whereNotNull('lat'),
                         false: fn (Builder $query) => $query->whereNull('lat'),
                     ),
-                TernaryFilter::make('dismissed'),
             ])
             ->recordActions([
                 EditAction::make(),

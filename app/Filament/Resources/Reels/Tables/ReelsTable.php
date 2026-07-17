@@ -45,6 +45,7 @@ class ReelsTable
                     ->dateTime()
                     ->sortable(),
             ])
+            ->defaultSort('id', 'desc')
             ->poll(fn () => Reel::query()->whereIn('status', self::NON_TERMINAL_STATUSES)->exists() ? '5s' : null)
             ->headerActions([
                 Action::make('addReels')
