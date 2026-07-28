@@ -59,7 +59,9 @@ class ProcessReel implements ShouldQueue
         // Idempotency: wipe previous extraction results on retry
         $reel->places()->delete();
 
-        foreach ($extractor->extract($reel->refresh()) as $extracted) {
+        $extractedPlaces = $this->backfillMissingCityGuess($extractor->extract($reel->refresh()));
+
+        foreach ($extractedPlaces as $extracted) {
             $place = $reel->places()->create([
                 'name' => $extracted['name'],
                 'city_guess' => $extracted['city_guess'] ?? null,
@@ -82,6 +84,35 @@ class ProcessReel implements ShouldQueue
             'status' => Reel::STATUS_FAILED,
             'error' => Str::limit($e->getMessage(), 500),
         ]);
+    }
+
+    /**
+     * List-style reels ("12 Must-Visit Spots in Lisbon") name the city once in
+     * the caption/title, so the model sometimes tags it on some entries and
+     * drops it on others in the same list. Since every place from one reel is
+     * almost always in the same city, fill nulls with that reel's majority
+     * city_guess — never overrides an entry that already names a (possibly
+     * different) city, so a reel that genuinely covers multiple cities is
+     * left alone.
+     *
+     * @param  array<int, array<string, mixed>>  $extractedPlaces
+     * @return array<int, array<string, mixed>>
+     */
+    private function backfillMissingCityGuess(array $extractedPlaces): array
+    {
+        $guesses = collect($extractedPlaces)->pluck('city_guess')->filter();
+
+        if ($guesses->isEmpty()) {
+            return $extractedPlaces;
+        }
+
+        $majorityGuess = $guesses->countBy()->sortDesc()->keys()->first();
+
+        return array_map(function (array $extracted) use ($majorityGuess) {
+            $extracted['city_guess'] ??= $majorityGuess;
+
+            return $extracted;
+        }, $extractedPlaces);
     }
 
     private function matchCity(?string $cityGuess): ?TripCity
