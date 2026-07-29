@@ -42,6 +42,12 @@ class ReelPlaceExtractor implements Agent, HasStructuredOutput
         return config('services.ollama.model');
     }
 
+    /** Structured-output generation on a 7B CPU model can run past a minute; give it room. */
+    public function timeout(): int
+    {
+        return 300;
+    }
+
     public function schema(JsonSchema $schema): array
     {
         return [
@@ -109,7 +115,7 @@ class ReelPlaceExtractor implements Agent, HasStructuredOutput
     /** @return array<int, array<string, mixed>>|null */
     private function promptOllamaForJson(string $userText): ?array
     {
-        $response = Http::timeout(120)
+        $response = Http::timeout(300)
             ->post(rtrim(config('services.ollama.base_url'), '/').'/api/chat', [
                 'model' => config('services.ollama.model'),
                 'stream' => false,
