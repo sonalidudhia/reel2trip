@@ -1,6 +1,5 @@
 <?php
 
-use App\Ai\Agents\ReelPlaceExtractor;
 use App\Jobs\ProcessReel;
 use App\Models\Reel;
 use App\Models\Trip;
@@ -31,16 +30,24 @@ function makeReelForBackfillTest(): Reel
     ]);
 }
 
+/** @param  array<int, array<string, mixed>>  $places */
+function fakeOllamaPlaces(array $places): void
+{
+    Http::fake([
+        '*/api/chat' => Http::response([
+            'message' => ['content' => json_encode(['places' => $places])],
+        ]),
+    ]);
+}
+
 test('fills a missing city_guess from the reel\'s majority guess', function () {
     $reel = makeReelForBackfillTest();
 
-    ReelPlaceExtractor::fake([
-        ['places' => [
-            ['name' => 'Santa Justa Lift', 'category' => 'viewpoint', 'city_guess' => null],
-            ['name' => 'Rua Augusta Arch', 'category' => 'sight', 'city_guess' => null],
-            ['name' => 'Rossio Square', 'category' => 'viewpoint', 'city_guess' => 'Lisbon'],
-            ['name' => 'Miradouro de Santa Luzia', 'category' => 'viewpoint', 'city_guess' => 'Lisbon'],
-        ]],
+    fakeOllamaPlaces([
+        ['name' => 'Santa Justa Lift', 'category' => 'viewpoint', 'city_guess' => null],
+        ['name' => 'Rua Augusta Arch', 'category' => 'sight', 'city_guess' => null],
+        ['name' => 'Rossio Square', 'category' => 'viewpoint', 'city_guess' => 'Lisbon'],
+        ['name' => 'Miradouro de Santa Luzia', 'category' => 'viewpoint', 'city_guess' => 'Lisbon'],
     ]);
 
     ProcessReel::dispatchSync($reel);
@@ -56,11 +63,9 @@ test('fills a missing city_guess from the reel\'s majority guess', function () {
 test('backfilled city_guess still matches to the right trip_city_id', function () {
     $reel = makeReelForBackfillTest();
 
-    ReelPlaceExtractor::fake([
-        ['places' => [
-            ['name' => 'Santa Justa Lift', 'category' => 'viewpoint', 'city_guess' => null],
-            ['name' => 'Rossio Square', 'category' => 'viewpoint', 'city_guess' => 'Lisbon'],
-        ]],
+    fakeOllamaPlaces([
+        ['name' => 'Santa Justa Lift', 'category' => 'viewpoint', 'city_guess' => null],
+        ['name' => 'Rossio Square', 'category' => 'viewpoint', 'city_guess' => 'Lisbon'],
     ]);
 
     ProcessReel::dispatchSync($reel);
@@ -74,12 +79,10 @@ test('backfilled city_guess still matches to the right trip_city_id', function (
 test('does not touch entries that already have a (possibly different) city_guess', function () {
     $reel = makeReelForBackfillTest();
 
-    ReelPlaceExtractor::fake([
-        ['places' => [
-            ['name' => 'Rossio Square', 'category' => 'viewpoint', 'city_guess' => 'Lisbon'],
-            ['name' => 'Rossio Square', 'category' => 'viewpoint', 'city_guess' => 'Lisbon'],
-            ['name' => 'Ribeira Square', 'category' => 'viewpoint', 'city_guess' => 'Porto'],
-        ]],
+    fakeOllamaPlaces([
+        ['name' => 'Rossio Square', 'category' => 'viewpoint', 'city_guess' => 'Lisbon'],
+        ['name' => 'Rossio Square', 'category' => 'viewpoint', 'city_guess' => 'Lisbon'],
+        ['name' => 'Ribeira Square', 'category' => 'viewpoint', 'city_guess' => 'Porto'],
     ]);
 
     ProcessReel::dispatchSync($reel);
@@ -90,10 +93,8 @@ test('does not touch entries that already have a (possibly different) city_guess
 test('leaves city_guess null when no entry in the reel has a guess at all', function () {
     $reel = makeReelForBackfillTest();
 
-    ReelPlaceExtractor::fake([
-        ['places' => [
-            ['name' => 'Some Place', 'category' => 'sight', 'city_guess' => null],
-        ]],
+    fakeOllamaPlaces([
+        ['name' => 'Some Place', 'category' => 'sight', 'city_guess' => null],
     ]);
 
     ProcessReel::dispatchSync($reel);

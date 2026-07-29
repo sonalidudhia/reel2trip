@@ -3,66 +3,28 @@
 namespace App\Ai\Agents;
 
 use App\Models\Reel;
-use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Laravel\Ai\Attributes\Provider;
-use Laravel\Ai\Contracts\Agent;
-use Laravel\Ai\Contracts\HasStructuredOutput;
-use Laravel\Ai\Promptable;
 use RuntimeException;
-use Stringable;
-use Throwable;
 
 /**
  * Sends all text pulled from a reel to a local Ollama model and gets back
  * structured place records. Free, no API key — runs on-device.
  *
- * Structured output (schema()) is the primary path. If the model returns
- * something the schema can't parse (local 7B-class models flake on this
- * sometimes), we fall back to a plain JSON-mode prompt with one retry that
- * feeds the validation error back to the model, then give up. Every place
- * is validated again before being handed back; invalid entries are dropped
- * and logged rather than failing the whole extraction.
+ * Uses Ollama's plain JSON mode (format: "json") rather than laravel/ai's
+ * schema-constrained structured output (dropped the Agent/Promptable setup
+ * this used to have). Tested head-to-head on the same text with qwen2.5:7b:
+ * the schema-constrained path returned city_guess null on every single
+ * entry, while plain JSON mode correctly filled it on all of them — the
+ * nullable-field constraint appears to bias this model/Ollama combination
+ * toward null. If a response can't be parsed at all, one retry feeds the
+ * parse error back to the model before giving up. Every place is validated
+ * before being handed back; invalid entries are dropped and logged rather
+ * than failing the whole extraction.
  */
-#[Provider('ollama')]
-class ReelPlaceExtractor implements Agent, HasStructuredOutput
+class ReelPlaceExtractor
 {
-    use Promptable;
-
     private const CATEGORIES = ['food', 'sight', 'viewpoint', 'activity', 'area', 'tip'];
-
-    public function instructions(): Stringable|string
-    {
-        return $this->systemPrompt();
-    }
-
-    public function model(): string
-    {
-        return config('services.ollama.model');
-    }
-
-    /** Structured-output generation on a 7B CPU model can run past a minute; give it room. */
-    public function timeout(): int
-    {
-        return 300;
-    }
-
-    public function schema(JsonSchema $schema): array
-    {
-        return [
-            'places' => $schema->array()->items(
-                $schema->object([
-                    'name' => $schema->string()->required(),
-                    'city_guess' => $schema->string()->nullable(),
-                    'category' => $schema->string()->enum(self::CATEGORIES)->required(),
-                    'description' => $schema->string()->nullable(),
-                    'tip' => $schema->string()->nullable(),
-                    'price_hint' => $schema->string()->nullable(),
-                ])
-            )->required(),
-        ];
-    }
 
     /** @return array<int, array<string, mixed>> */
     public function extract(Reel $reel): array
@@ -73,43 +35,20 @@ class ReelPlaceExtractor implements Agent, HasStructuredOutput
             return [];
         }
 
-        try {
-            $response = $this->prompt($text);
-            $places = $response['places'] ?? null;
-
-            if (! is_array($places)) {
-                throw new RuntimeException('structured response missing "places" array');
-            }
-        } catch (Throwable $e) {
-            $places = $this->fallbackRawJson($text, $e->getMessage());
-        }
-
-        return $this->validated($places);
-    }
-
-    /**
-     * One retry, with the prior error fed back to the model, via Ollama's generic JSON mode.
-     *
-     * @return array<int, array<string, mixed>>
-     */
-    private function fallbackRawJson(string $text, string $priorError): array
-    {
         $attempt = $this->promptOllamaForJson($text);
 
-        if ($attempt !== null) {
-            return $attempt;
-        }
-
-        $retryPrompt = $text."\n\n---\nYour previous response could not be used ({$priorError}). "
-            .'Respond again with ONLY the JSON object described above, no markdown fences, no preamble.';
-
-        $attempt = $this->promptOllamaForJson($retryPrompt);
-
         if ($attempt === null) {
-            throw new RuntimeException("Extractor returned unusable output twice; last error: {$priorError}");
+            $retryPrompt = $text."\n\n---\nYour previous response could not be parsed as the JSON object described above. "
+                .'Respond again with ONLY that JSON object, no markdown fences, no preamble.';
+
+            $attempt = $this->promptOllamaForJson($retryPrompt);
+
+            if ($attempt === null) {
+                throw new RuntimeException('Extractor returned unparseable output twice in a row.');
+            }
         }
 
-        return $attempt;
+        return $this->validated($attempt);
     }
 
     /** @return array<int, array<string, mixed>>|null */
