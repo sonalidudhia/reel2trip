@@ -26,6 +26,34 @@ class ReelPlaceExtractor
 {
     private const CATEGORIES = ['food', 'sight', 'viewpoint', 'activity', 'area', 'tip'];
 
+    /**
+     * The model sometimes reaches for a more specific word than our 6-value
+     * enum allows (e.g. "restaurant" instead of "food", "beach" instead of
+     * "viewpoint"). Map those onto the closest real category instead of
+     * dropping an otherwise well-extracted place over vocabulary mismatch.
+     */
+    private const CATEGORY_ALIASES = [
+        'restaurant' => 'food',
+        'cafe' => 'food',
+        'bar' => 'food',
+        'bakery' => 'food',
+        'dessert' => 'food',
+        'beach' => 'viewpoint',
+        'cliff' => 'viewpoint',
+        'sunset spot' => 'viewpoint',
+        'island' => 'sight',
+        'museum' => 'sight',
+        'hike' => 'activity',
+        'trail' => 'activity',
+        'tour' => 'activity',
+        'market' => 'area',
+        'location' => 'area',
+        'neighborhood' => 'area',
+        'neighbourhood' => 'area',
+        'street' => 'area',
+        'town' => 'area',
+    ];
+
     /** @return array<int, array<string, mixed>> */
     public function extract(Reel $reel): array
     {
@@ -86,16 +114,46 @@ class ReelPlaceExtractor
         $valid = [];
 
         foreach ($places as $place) {
-            if (! is_array($place) || empty($place['name']) || ! in_array($place['category'] ?? null, self::CATEGORIES, true)) {
+            if (! is_array($place) || empty($place['name'])) {
                 Log::warning('ReelPlaceExtractor dropped an invalid place entry', ['place' => $place]);
 
                 continue;
             }
 
+            $category = $this->normalizeCategory($place['category'] ?? null);
+
+            if ($category === null) {
+                Log::warning('ReelPlaceExtractor dropped a place with an unrecognized category', ['place' => $place]);
+
+                continue;
+            }
+
+            $place['category'] = $category;
             $valid[] = $place;
         }
 
         return $valid;
+    }
+
+    /**
+     * The model sometimes combines categories ("food | viewpoint") or reaches
+     * for a synonym ("restaurant", "beach") instead of our exact enum. Take
+     * the first term, lowercase it, and map it onto a real category rather
+     * than rejecting the whole entry over a vocabulary mismatch.
+     */
+    private function normalizeCategory(mixed $category): ?string
+    {
+        if (! is_string($category) || trim($category) === '') {
+            return null;
+        }
+
+        $first = strtolower(trim(explode('|', $category)[0]));
+
+        if (in_array($first, self::CATEGORIES, true)) {
+            return $first;
+        }
+
+        return self::CATEGORY_ALIASES[$first] ?? null;
     }
 
     private function systemPrompt(): string
@@ -110,7 +168,7 @@ class ReelPlaceExtractor
             {
               "name": "official/searchable place name, cleaned up",
               "city_guess": "city if stated or strongly implied, else null",
-              "category": "food | sight | viewpoint | activity | area | tip",
+              "category": "food",
               "description": "one sentence: what it is and why it was recommended",
               "tip": "practical advice from the reel (timing, booking, cash only), else null",
               "price_hint": "any price mentioned, verbatim-ish, else null"
@@ -120,6 +178,7 @@ class ReelPlaceExtractor
 
         Rules:
         - One entry per distinct place. A reel listing "5 must-eat spots in Porto" yields 5 entries.
+        - "category" must be EXACTLY ONE of these six words, nothing else: food, sight, viewpoint, activity, area, tip. Never combine two of them and never invent a different word (not "restaurant", not "beach", not "museum") — pick whichever of the six fits best.
         - "name" must be Google-Maps-searchable: "Manteigaria" not "this pastel de nata place 😍".
         - General advice with no place attached (e.g. "always validate metro tickets") gets category "tip" and name = short summary of the tip.
         - Tips still get a "city_guess" whenever the reel says or clearly implies which city the advice is for — e.g. "In Barcelona, always validate your metro ticket" is city_guess "Barcelona", not null. Only leave it null if the reel never says which city the tip applies to.

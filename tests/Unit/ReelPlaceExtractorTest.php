@@ -46,7 +46,7 @@ test('an entry missing a name is dropped without throwing', function () {
         ->and($places[0]['name'])->toBe('Valid Place');
 });
 
-test('an entry with an invalid category is dropped without throwing', function () {
+test('an entry with a truly unrecognized category is dropped without throwing', function () {
     fakeOllamaChat(['places' => [
         ['name' => 'Valid Place', 'category' => 'sight'],
         ['name' => 'Bad Category Place', 'category' => 'not-a-real-category'],
@@ -56,6 +56,32 @@ test('an entry with an invalid category is dropped without throwing', function (
 
     expect($places)->toHaveCount(1)
         ->and($places[0]['name'])->toBe('Valid Place');
+});
+
+test('a pipe-combined category is normalized to its first term instead of being dropped', function () {
+    fakeOllamaChat(['places' => [
+        ['name' => 'La Malinche', 'category' => 'food | viewpoint'],
+    ]]);
+
+    $places = (new ReelPlaceExtractor)->extract(makeReelWithCaption('Some caption.'));
+
+    expect($places)->toHaveCount(1)
+        ->and($places[0]['category'])->toBe('food');
+});
+
+test('a category synonym is mapped onto the closest real category instead of being dropped', function () {
+    fakeOllamaChat(['places' => [
+        ['name' => 'Some Restaurant', 'category' => 'restaurant'],
+        ['name' => 'Some Beach', 'category' => 'beach'],
+        ['name' => 'Some Market', 'category' => 'market'],
+    ]]);
+
+    $places = (new ReelPlaceExtractor)->extract(makeReelWithCaption('Some caption.'));
+
+    expect($places)->toHaveCount(3)
+        ->and($places[0]['category'])->toBe('food')
+        ->and($places[1]['category'])->toBe('viewpoint')
+        ->and($places[2]['category'])->toBe('area');
 });
 
 test('an unparseable response retries once with the parse issue fed back', function () {
