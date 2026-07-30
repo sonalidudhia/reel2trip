@@ -41,7 +41,11 @@ return [
 
     'ollama' => [
         'base_url' => env('OLLAMA_URL', 'http://127.0.0.1:11434'),
-        'model' => env('OLLAMA_MODEL', 'llama3.2:3b'),
+        // A 3b model is deliberate: a 7b (~4.7GB resident) pushes an 8GB machine
+        // into swap and makes the whole desktop crawl while a reel is processing.
+        'model' => env('OLLAMA_MODEL', 'qwen2.5:3b'),
+        // How long ollama keeps the weights loaded after a request.
+        'keep_alive' => env('OLLAMA_KEEP_ALIVE', '10s'),
     ],
 
     'openai' => [
@@ -51,6 +55,9 @@ return [
     'whisper' => [
         'bin' => env('WHISPER_BIN', 'whisper-cli'),
         'model_path' => env('WHISPER_MODEL', env('WHISPER_MODEL_PATH', storage_path('app/whisper-models/ggml-base.en.bin'))),
+        // whisper.cpp grabs min(4, cores) by default. One fewer keeps a core
+        // free for the desktop while a reel transcribes.
+        'threads' => (int) env('WHISPER_THREADS', 3),
     ],
 
     'google' => [

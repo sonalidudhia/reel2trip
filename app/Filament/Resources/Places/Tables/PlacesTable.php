@@ -2,7 +2,9 @@
 
 namespace App\Filament\Resources\Places\Tables;
 
+use App\Models\Place;
 use App\Models\TripCity;
+use App\Support\PlaceCategories;
 use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
@@ -22,33 +24,62 @@ class PlacesTable
     {
         return $table
             ->columns([
-                TextColumn::make('name')->searchable(),
-                TextColumn::make('category'),
-                TextColumn::make('tripCity.name')->label('City'),
+                TextColumn::make('name')
+                    ->searchable()
+                    ->sortable()
+                    ->weight('medium')
+                    // The one-line "what it is" belongs with the name, not in its
+                    // own column — it's prose, and prose in a cell wrecks the grid.
+                    ->description(fn (Place $record) => $record->description)
+                    ->wrap(),
+                TextColumn::make('category')
+                    ->badge()
+                    ->formatStateUsing(fn (?string $state) => PlaceCategories::label($state))
+                    ->color(fn (?string $state) => PlaceCategories::color($state))
+                    ->icon(fn (?string $state) => PlaceCategories::icon($state))
+                    ->sortable(),
+                TextColumn::make('tripCity.name')
+                    ->label('City')
+                    ->badge()
+                    ->color('gray')
+                    ->placeholder('Unassigned')
+                    ->sortable(),
+                TextColumn::make('rating')
+                    ->label('Rating')
+                    ->icon('heroicon-m-star')
+                    ->iconColor('warning')
+                    ->placeholder('—')
+                    ->sortable(),
+                TextColumn::make('price_level')
+                    ->label('Price')
+                    ->formatStateUsing(fn (Place $record) => $record->priceLabel())
+                    ->placeholder('—')
+                    ->toggleable(),
                 ToggleColumn::make('selected')->label('Visiting'),
-                ToggleColumn::make('must_do')->disabled(fn ($record) => ! $record->selected),
-                ToggleColumn::make('dismissed'),
+                ToggleColumn::make('must_do')
+                    ->label('Must do')
+                    ->disabled(fn ($record) => ! $record->selected),
+                ToggleColumn::make('dismissed')->toggleable(isToggledHiddenByDefault: true),
             ])
+            ->defaultSort('id', 'desc')
+            ->striped()
             ->filters([
                 SelectFilter::make('trip_city_id')
                     ->label('City')
                     ->options(fn () => TripCity::whereHas('trip', fn ($q) => $q->where('user_id', auth()->id()))->pluck('name', 'id'))
                     ->searchable(),
                 SelectFilter::make('category')
-                    ->options([
-                        'food' => 'Food',
-                        'sight' => 'Sight',
-                        'viewpoint' => 'Viewpoint',
-                        'activity' => 'Activity',
-                        'area' => 'Area',
-                        'tip' => 'Tip',
-                    ]),
+                    ->options(PlaceCategories::options()),
+                TernaryFilter::make('selected')->label('Visiting'),
                 TernaryFilter::make('enriched')
                     ->queries(
                         true: fn (Builder $query) => $query->whereNotNull('lat'),
                         false: fn (Builder $query) => $query->whereNull('lat'),
                     ),
             ])
+            ->emptyStateIcon('heroicon-o-map-pin')
+            ->emptyStateHeading('No places yet')
+            ->emptyStateDescription('Add some Instagram reels and the places mentioned in them will land here.')
             ->recordActions([
                 EditAction::make(),
             ])
@@ -56,6 +87,7 @@ class PlacesTable
                 BulkActionGroup::make([
                     BulkAction::make('assignToCity')
                         ->label('Assign to city')
+                        ->icon('heroicon-m-map-pin')
                         ->schema([
                             Select::make('trip_city_id')
                                 ->label('City')
@@ -63,6 +95,11 @@ class PlacesTable
                                 ->required(),
                         ])
                         ->action(fn (Collection $records, array $data) => $records->each->update(['trip_city_id' => $data['trip_city_id']])),
+                    BulkAction::make('markVisiting')
+                        ->label('Mark as visiting')
+                        ->icon('heroicon-m-check')
+                        ->color('success')
+                        ->action(fn (Collection $records) => $records->each->update(['selected' => true])),
                     DeleteBulkAction::make(),
                 ]),
             ]);

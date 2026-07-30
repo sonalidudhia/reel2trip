@@ -20,7 +20,11 @@ class PlaceResource extends Resource
 {
     protected static ?string $model = Place::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedInbox;
+
+    protected static ?int $navigationSort = 5;
+
+    protected static ?string $navigationLabel = 'All Places';
 
     public static function getEloquentQuery(): Builder
     {

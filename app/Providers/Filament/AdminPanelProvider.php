@@ -30,9 +30,19 @@ class AdminPanelProvider extends PanelProvider
             // v4 defaults to read-only relation managers on View pages (Create/Edit/Delete
             // all hidden there); this app's View pages ARE the management UI for cities/places.
             ->readOnlyRelationManagersOnResourceViewPagesByDefault(false)
+            ->brandName('reel2trip')
+            ->sidebarCollapsibleOnDesktop()
             ->colors([
                 'primary' => Color::Amber,
+                'info' => Color::Sky,
+                'success' => Color::Emerald,
+                'warning' => Color::Orange,
+                'danger' => Color::Rose,
             ])
+            // Custom theme: Filament's precompiled CSS carries only its own
+            // fi-* classes, so Tailwind utilities in our Filament views need
+            // their own build.
+            ->viteTheme('resources/css/filament/app/theme.css')
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')
             ->pages([

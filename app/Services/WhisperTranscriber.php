@@ -35,7 +35,8 @@ class WhisperTranscriber
         $audioPath = preg_replace('/\.\w+$/', '.mp3', $reel->video_path);
 
         $result = Process::timeout(120)->run([
-            'ffmpeg', '-y', '-i', $reel->video_path,
+            'ffmpeg', '-y', '-threads', (string) config('services.whisper.threads'),
+            '-i', $reel->video_path,
             '-vn', '-ar', '16000', '-ac', '1', '-b:a', '64k',
             $audioPath,
         ]);
@@ -60,6 +61,7 @@ class WhisperTranscriber
             config('services.whisper.bin'),
             '-m', config('services.whisper.model_path'),
             '-f', $audioPath,
+            '-t', (string) config('services.whisper.threads'),
             '-np', '-nt',
         ]);
 

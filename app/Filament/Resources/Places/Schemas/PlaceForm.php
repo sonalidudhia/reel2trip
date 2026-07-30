@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Places\Schemas;
 
 use App\Models\TripCity;
+use App\Support\PlaceCategories;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -16,14 +17,7 @@ class PlaceForm
             ->components([
                 TextInput::make('name')->required(),
                 Select::make('category')
-                    ->options([
-                        'food' => 'Food',
-                        'sight' => 'Sight',
-                        'viewpoint' => 'Viewpoint',
-                        'activity' => 'Activity',
-                        'area' => 'Area',
-                        'tip' => 'Tip',
-                    ])
+                    ->options(PlaceCategories::options())
                     ->required(),
                 Select::make('trip_city_id')
                     ->label('City')

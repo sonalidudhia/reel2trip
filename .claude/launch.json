@@ -15,14 +15,14 @@
     },
     {
       "name": "queue",
-      "runtimeExecutable": "php",
-      "runtimeArgs": ["artisan", "queue:listen", "--tries=1", "--timeout=0"],
+      "runtimeExecutable": "nice",
+      "runtimeArgs": ["-n", "15", "php", "artisan", "queue:listen", "--tries=1", "--timeout=0"],
       "port": 0
     },
     {
       "name": "ollama",
-      "runtimeExecutable": "ollama",
-      "runtimeArgs": ["serve"],
+      "runtimeExecutable": "env",
+      "runtimeArgs": ["OLLAMA_KEEP_ALIVE=10s", "OLLAMA_MAX_LOADED_MODELS=1", "ollama", "serve"],
       "port": 11434
     }
   ]

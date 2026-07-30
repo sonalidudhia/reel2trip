@@ -1,0 +1,20 @@
+@import '../../../../vendor/filament/filament/resources/css/theme.css';
+
+/* Filament's shipped stylesheet only contains its own fi-* classes, so any
+   Tailwind utility used in our own Filament views has to be compiled here. */
+@source '../../../../app/Filament/**/*.php';
+@source '../../../../resources/views/filament/**/*.blade.php';
+@source '../../../../vendor/filament/**/*.blade.php';
+
+/* Filament only outlines the sidebar while it's an overlay on small screens, so
+   on desktop the menu runs straight into the content. A hairline divides them.
+   Logical property, so it stays on the correct edge in RTL. */
+@media (width >= 1024px) {
+    .fi-sidebar {
+        border-inline-end: 1px solid var(--gray-200);
+    }
+
+    .dark .fi-sidebar {
+        border-inline-end-color: color-mix(in oklab, var(--color-white) 10%, transparent);
+    }
+}

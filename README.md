@@ -12,8 +12,8 @@ POST /reels (paste URLs)
         ▼
 ProcessReel job (queued, retries with backoff)
   1. InstagramDownloader   yt-dlp → video + caption
-  2. WhisperTranscriber    ffmpeg → mp3 → Whisper API → transcript
-  3. ClaudePlaceExtractor  caption+transcript → Claude → JSON places
+  2. WhisperTranscriber    ffmpeg → mp3 → whisper.cpp (local) → transcript
+  3. ReelPlaceExtractor    caption+transcript+OCR → local Ollama → JSON places
         │
         ▼ (one per place)
 EnrichPlace job
@@ -33,7 +33,15 @@ EnrichPlace job
    pipx install yt-dlp        # or: pip install -U yt-dlp
    ```
 
-3. Migrate and seed your cities:
+3. Build the assets. This is not optional: the admin panel uses a custom
+   Filament theme, and Filament resolves it through the Vite manifest, so every
+   panel page 500s until `public/build` exists.
+
+   ```bash
+   npm install && npm run build
+   ```
+
+4. Migrate and seed your cities:
 
    ```bash
    php artisan migrate
@@ -43,29 +51,37 @@ EnrichPlace job
    >>> TripCity::create(['name' => 'Barcelona', 'country' => 'Spain',    'days' => 4]);
    ```
 
-4. Run the worker:
+5. Run the worker. `nice` matters: the pipeline runs whisper.cpp and a local
+   LLM at full tilt, and without it they compete with the desktop for CPU.
 
    ```bash
-   php artisan queue:work --timeout=300
+   nice -n 15 php artisan queue:work --timeout=300
    ```
 
-5. POST reel URLs (one per line) to `/reels`, then watch
+   On a machine with 8GB RAM or less, keep `OLLAMA_MODEL` at a 3b model — a 7b
+   needs ~4.7GB resident and will drive the whole system into swap. Start
+   ollama with `OLLAMA_KEEP_ALIVE=10s OLLAMA_MAX_LOADED_MODELS=1` so it frees
+   that memory between reels rather than holding it for 5 minutes.
+
+6. POST reel URLs (one per line) to `/reels`, then watch
    `/api/reels` and `/api/cities/{id}/places` fill up.
 
 ## API keys
 
+Transcription and extraction both run on-device, so neither needs a key.
+
 | Key | Used for | Notes |
 |---|---|---|
-| `ANTHROPIC_API_KEY` | place extraction | pennies per reel |
-| `OPENAI_API_KEY` | Whisper transcription | ~$0.006/min of audio |
 | `GOOGLE_PLACES_API_KEY` | enrichment | enable Places API; free tier covers a trip's worth easily |
 | `INSTAGRAM_COOKIES_FILE` | optional | Netscape cookies export; helps yt-dlp past login walls |
+| `OLLAMA_MODEL` | place extraction | local model, no key. Defaults to `qwen2.5:3b` |
+| `WHISPER_BIN` / `WHISPER_MODEL` | transcription | `whisper-cli` plus a ggml model file, no key |
 
 ## Design decisions worth knowing
 
 - **One idempotent job, not a chain.** Each stage checks whether its output
-  already exists, so a retry after an IG rate-limit doesn't re-pay for
-  Whisper/Claude calls that already succeeded. Extraction wipes and rewrites
+  already exists, so a retry after an IG rate-limit doesn't redo the
+  transcription and extraction work that already succeeded. Extraction wipes and rewrites
   its places on retry so you never get duplicates.
 - **`city_guess` vs `trip_city_id`.** The extractor records what the reel
   *said*; the job then tries an exact match against your seeded cities.
@@ -81,9 +97,10 @@ EnrichPlace job
 - **Frame OCR** — `ffmpeg -i reel.mp4 -vf fps=0.5 frames/%03d.png` +
   Tesseract, write result to `reels.ocr_text`. `combinedText()` already
   includes it, so the extractor picks it up with zero further changes.
-- **Day planner** — with lat/lng in hand: k-means (or plain greedy
-  nearest-neighbor) into `days` clusters per city, write cluster index to
-  `places.planned_day`, sort within day by opening hours.
+- **Automatic day planning** — assigning days by hand works today (Visiting
+  Places groups by day, and each place has a day picker). What's missing is the
+  suggestion: k-means on lat/lng into `days` clusters per city, written to
+  `places.planned_day` and sorted within a day by opening hours.
 - **Map view** — Leaflet + OSM tiles reading `/api/cities/{id}/places`.
 
 ## Rate-limit etiquette

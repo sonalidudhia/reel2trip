@@ -116,3 +116,14 @@ test('returns an empty array without calling the model when the reel has no text
     expect($places)->toBe([]);
     Http::assertNothingSent();
 });
+
+test('asks ollama to unload the model shortly after the request', function () {
+    // Left at ollama's 5-minute default, the weights stay resident long after a
+    // reel is done and push a small-RAM machine into swap.
+    fakeOllamaChat(['places' => [['name' => 'Valid Place', 'category' => 'sight']]]);
+    config(['services.ollama.keep_alive' => '10s']);
+
+    (new ReelPlaceExtractor)->extract(makeReelWithCaption('Some caption.'));
+
+    Http::assertSent(fn ($request) => $request['keep_alive'] === '10s');
+});

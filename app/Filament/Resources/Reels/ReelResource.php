@@ -21,7 +21,9 @@ class ReelResource extends Resource
 
     protected static ?string $model = Reel::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedFilm;
+
+    protected static ?int $navigationSort = 4;
 
     public static function infolist(Schema $schema): Schema
     {

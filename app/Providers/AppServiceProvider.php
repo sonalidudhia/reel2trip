@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use Filament\Tables\Table;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\ServiceProvider;
 
@@ -20,6 +21,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // A reel dump is long; 10 rows per page means endless paging.
+        Table::configureUsing(fn (Table $table) => $table
+            ->defaultPaginationPageOption(50)
+            ->paginationPageOptions([25, 50, 100, 'all']));
+
         // Process (yt-dlp, ffmpeg) inherits PHP's own PATH, which lacks
         // Homebrew's bin dirs when this process isn't spawned from a login shell.
         $path = getenv('PATH') ?: '';

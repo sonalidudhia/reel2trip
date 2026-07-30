@@ -22,7 +22,9 @@ class TripResource extends Resource
 {
     protected static ?string $model = Trip::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedGlobeEuropeAfrica;
+
+    protected static ?int $navigationSort = 3;
 
     public static function getEloquentQuery(): Builder
     {

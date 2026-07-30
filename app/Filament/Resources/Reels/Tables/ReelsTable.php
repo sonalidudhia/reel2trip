@@ -11,6 +11,7 @@ use Filament\Actions\DeleteBulkAction;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Notifications\Notification;
+use Filament\Support\Enums\IconPosition;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 
@@ -34,22 +35,52 @@ class ReelsTable
                         Reel::STATUS_FAILED => 'danger',
                         Reel::STATUS_PENDING => 'gray',
                         default => 'warning',
-                    }),
+                    })
+                    ->icon(fn (string $state) => match ($state) {
+                        Reel::STATUS_DONE => 'heroicon-m-check-circle',
+                        Reel::STATUS_FAILED => 'heroicon-m-exclamation-triangle',
+                        Reel::STATUS_PENDING => 'heroicon-m-clock',
+                        default => 'heroicon-m-arrow-path',
+                    })
+                    ->sortable(),
                 TextColumn::make('shortcode')
+                    ->label('Reel')
+                    ->icon('heroicon-m-arrow-top-right-on-square')
+                    ->iconPosition(IconPosition::After)
+                    ->color('primary')
+                    ->searchable()
                     ->url(fn (Reel $record) => $record->url)
-                    ->openUrlInNewTab(),
+                    ->openUrlInNewTab()
+                    // The failure reason is the only thing you want to read on a
+                    // failed row, so it rides along under the shortcode.
+                    ->description(fn (Reel $record) => $record->error),
+                TextColumn::make('trip.name')
+                    ->label('Trip')
+                    ->badge()
+                    ->color('gray')
+                    ->placeholder('—'),
                 TextColumn::make('places_count')
                     ->counts('places')
-                    ->label('Places'),
+                    ->label('Places')
+                    ->badge()
+                    ->color(fn (int $state) => $state > 0 ? 'success' : 'gray')
+                    ->sortable(),
                 TextColumn::make('created_at')
-                    ->dateTime()
+                    ->label('Added')
+                    ->since()
+                    ->tooltip(fn (Reel $record) => $record->created_at?->toDayDateTimeString())
                     ->sortable(),
             ])
             ->defaultSort('id', 'desc')
+            ->striped()
+            ->emptyStateIcon('heroicon-o-film')
+            ->emptyStateHeading('No reels yet')
+            ->emptyStateDescription('Paste Instagram reel links with "Add reels" and the pipeline takes it from there.')
             ->poll(fn () => Reel::query()->whereIn('status', self::NON_TERMINAL_STATUSES)->exists() ? '5s' : null)
             ->headerActions([
                 Action::make('addReels')
                     ->label('Add reels')
+                    ->icon('heroicon-m-plus')
                     ->schema([
                         Select::make('trip_id')
                             ->label('Trip')
@@ -102,6 +133,8 @@ class ReelsTable
             ])
             ->recordActions([
                 Action::make('retry')
+                    ->icon('heroicon-m-arrow-path')
+                    ->color('warning')
                     ->visible(fn (Reel $record) => $record->status === Reel::STATUS_FAILED)
                     ->action(fn (Reel $record) => ProcessReel::dispatch($record)),
             ])

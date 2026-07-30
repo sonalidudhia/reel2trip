@@ -87,6 +87,10 @@ class ReelPlaceExtractor
                 'model' => config('services.ollama.model'),
                 'stream' => false,
                 'format' => 'json',
+                // Ollama holds the weights resident for 5 minutes after a request
+                // by default, which on a small-RAM machine keeps the whole system
+                // swapping long after the reel is done. Send it home instead.
+                'keep_alive' => config('services.ollama.keep_alive'),
                 'messages' => [
                     ['role' => 'system', 'content' => $this->systemPrompt()],
                     ['role' => 'user', 'content' => $userText],
@@ -179,11 +183,17 @@ class ReelPlaceExtractor
         Rules:
         - One entry per distinct place. A reel listing "5 must-eat spots in Porto" yields 5 entries.
         - "category" must be EXACTLY ONE of these six words, nothing else: food, sight, viewpoint, activity, area, tip. Never combine two of them and never invent a different word (not "restaurant", not "beach", not "museum") — pick whichever of the six fits best.
-        - "name" must be Google-Maps-searchable: "Manteigaria" not "this pastel de nata place 😍".
+        - "name" must be Google-Maps-searchable: "Manteigaria" not "this pastel de nata place 😍". Write it in normal Title Case even when the on-screen text is ALL CAPS, and prefer the spoken/caption spelling over the on-screen one when they differ.
+        - "tip" is the most useful field to a trip planner, so do not leave it null when the text contains advice: booking ahead, best time of day, queues, cash only, what to order, what to wear, how to get there. Attach the advice to the place it belongs to.
+        - "description" is never null when the reel says anything at all about the place.
         - General advice with no place attached (e.g. "always validate metro tickets") gets category "tip" and name = short summary of the tip.
         - Tips still get a "city_guess" whenever the reel says or clearly implies which city the advice is for — e.g. "In Barcelona, always validate your metro ticket" is city_guess "Barcelona", not null. Only leave it null if the reel never says which city the tip applies to.
         - If the text contains no places or tips at all, return {"places": []}.
         - Never invent places that are not in the text.
+
+        Worked example. Text: "PASTEIS DE BELEM / first stop Pasteis de Belem in Lisbon, go before 9am or you'll queue for an hour, they're like one euro fifty each" gives:
+
+        {"places": [{"name": "Pasteis de Belem", "city_guess": "Lisbon", "category": "food", "description": "The original pastel de nata bakery, first stop of the reel.", "tip": "Go before 9am to avoid an hour-long queue.", "price_hint": "~€1.50 each"}]}
         PROMPT;
     }
 }
