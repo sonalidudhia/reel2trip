@@ -14,6 +14,7 @@ use Filament\Notifications\Notification;
 use Filament\Support\Enums\IconPosition;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 class ReelsTable
 {
@@ -41,8 +42,7 @@ class ReelsTable
                         Reel::STATUS_FAILED => 'heroicon-m-exclamation-triangle',
                         Reel::STATUS_PENDING => 'heroicon-m-clock',
                         default => 'heroicon-m-arrow-path',
-                    })
-                    ->sortable(),
+                    }),
                 TextColumn::make('shortcode')
                     ->label('Reel')
                     ->icon('heroicon-m-arrow-top-right-on-square')
@@ -63,15 +63,16 @@ class ReelsTable
                     ->counts('places')
                     ->label('Places')
                     ->badge()
-                    ->color(fn (int $state) => $state > 0 ? 'success' : 'gray')
-                    ->sortable(),
+                    ->color(fn (int $state) => $state > 0 ? 'success' : 'gray'),
+                // Sorts on id, not created_at: a pasted batch of reels all share the
+                // same second, and ordering by the timestamp would shuffle them.
                 TextColumn::make('created_at')
                     ->label('Added')
                     ->since()
                     ->tooltip(fn (Reel $record) => $record->created_at?->toDayDateTimeString())
-                    ->sortable(),
+                    ->sortable(query: fn (Builder $query, string $direction) => $query->orderBy('id', $direction)),
             ])
-            ->defaultSort('id', 'desc')
+            ->defaultSort('created_at', 'desc')
             ->striped()
             ->emptyStateIcon('heroicon-o-film')
             ->emptyStateHeading('No reels yet')
@@ -97,7 +98,7 @@ class ReelsTable
                             ->unique();
 
                         $queued = 0;
-                        $alreadyDone = 0;
+                        $skipped = [];
 
                         foreach ($urls as $url) {
                             $reel = Reel::firstOrCreate(
@@ -109,7 +110,7 @@ class ReelsTable
                                 ProcessReel::dispatch($reel);
                                 $queued++;
                             } else {
-                                $alreadyDone++;
+                                $skipped[] = $reel->shortcode;
                             }
                         }
 
@@ -125,9 +126,13 @@ class ReelsTable
                         Notification::make()
                             ->title($queued > 0
                                 ? "Queued {$queued} reel(s) for processing"
-                                : 'Nothing queued')
-                            ->body($alreadyDone > 0 ? "{$alreadyDone} URL(s) were already processed (or in progress) and were skipped." : null)
-                            ->success()
+                                : 'Already in your list')
+                            ->body($skipped === [] ? null : sprintf(
+                                '%s %s already here, so nothing was re-run. Use "Re-process" on the row to run it again.',
+                                implode(', ', $skipped),
+                                count($skipped) === 1 ? 'is' : 'are',
+                            ))
+                            ->{$queued > 0 ? 'success' : 'info'}()
                             ->send();
                     }),
             ])
@@ -137,6 +142,26 @@ class ReelsTable
                     ->color('warning')
                     ->visible(fn (Reel $record) => $record->status === Reel::STATUS_FAILED)
                     ->action(fn (Reel $record) => ProcessReel::dispatch($record)),
+                // Re-pasting a URL that's already here is deduped away, so this is
+                // the only way to run a reel through an improved model or prompt.
+                Action::make('reprocess')
+                    ->label('Re-process')
+                    ->icon('heroicon-m-sparkles')
+                    ->color('gray')
+                    ->requiresConfirmation()
+                    ->modalHeading('Re-process this reel?')
+                    ->modalDescription('The places already extracted from it are replaced by a fresh run. The video and transcript are reused, so this only re-runs the extraction.')
+                    ->modalSubmitActionLabel('Re-process')
+                    ->visible(fn (Reel $record) => $record->status === Reel::STATUS_DONE)
+                    ->action(function (Reel $record): void {
+                        $record->update(['status' => Reel::STATUS_PENDING, 'error' => null]);
+                        ProcessReel::dispatch($record);
+
+                        Notification::make()
+                            ->title("Re-processing {$record->shortcode}")
+                            ->success()
+                            ->send();
+                    }),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([

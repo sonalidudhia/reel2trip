@@ -25,3 +25,6 @@ _ide_helper.php
 Homestead.json
 Homestead.yaml
 Thumbs.db
+
+# Demo recordings, renders and the helper script that builds them — local only.
+/demo/

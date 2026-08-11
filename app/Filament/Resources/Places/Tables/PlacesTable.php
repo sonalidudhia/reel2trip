@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Places\Tables;
 
+use App\Filament\Resources\Reels\ReelResource;
 use App\Models\Place;
 use App\Models\TripCity;
 use App\Support\PlaceCategories;
@@ -44,6 +45,18 @@ class PlacesTable
                     ->color('gray')
                     ->placeholder('Unassigned')
                     ->sortable(),
+                // Without this the link only runs one way — a reel's page lists its
+                // places, but a place never says where it came from.
+                TextColumn::make('reel.shortcode')
+                    ->label('From reel')
+                    ->icon('heroicon-m-film')
+                    ->color('primary')
+                    ->url(fn (Place $record) => $record->reel
+                        ? ReelResource::getUrl('view', ['record' => $record->reel])
+                        : null)
+                    ->tooltip('Open the reel this place was extracted from')
+                    ->searchable()
+                    ->placeholder('—'),
                 TextColumn::make('rating')
                     ->label('Rating')
                     ->icon('heroicon-m-star')
@@ -55,6 +68,13 @@ class PlacesTable
                     ->formatStateUsing(fn (Place $record) => $record->priceLabel())
                     ->placeholder('—')
                     ->toggleable(),
+                // The table leads with the newest extraction, so show when that was
+                // — otherwise the ordering is invisible.
+                TextColumn::make('created_at')
+                    ->label('Added')
+                    ->since()
+                    ->tooltip(fn (Place $record) => $record->created_at?->toDayDateTimeString())
+                    ->sortable(),
                 ToggleColumn::make('selected')->label('Visiting'),
                 ToggleColumn::make('must_do')
                     ->label('Must do')
@@ -70,6 +90,11 @@ class PlacesTable
                     ->searchable(),
                 SelectFilter::make('category')
                     ->options(PlaceCategories::options()),
+                SelectFilter::make('reel')
+                    ->label('Reel')
+                    ->relationship('reel', 'shortcode', fn ($query) => $query->whereHas('trip', fn ($q) => $q->where('user_id', auth()->id())))
+                    ->searchable()
+                    ->preload(),
                 TernaryFilter::make('selected')->label('Visiting'),
                 TernaryFilter::make('enriched')
                     ->queries(
