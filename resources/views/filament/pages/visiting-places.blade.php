@@ -122,14 +122,16 @@
                                                 wire:click="toggleMustDo({{ $place->id }})"
                                             />
 
-                                            @if ($place->lat && $place->lng)
+                                            @php($mapsUrl = $place->mapsUrl($city['name']))
+                                            @if ($mapsUrl)
                                                 <x-filament::icon-button
                                                     tag="a"
                                                     icon="heroicon-o-map"
                                                     color="gray"
-                                                    label="Open in Google Maps"
-                                                    href="https://www.google.com/maps/search/?api=1&query={{ $place->lat }},{{ $place->lng }}{{ $place->google_place_id ? '&query_place_id=' . $place->google_place_id : '' }}"
+                                                    label="Open in Maps"
+                                                    :href="$mapsUrl"
                                                     target="_blank"
+                                                    rel="noopener noreferrer"
                                                 />
                                             @endif
 

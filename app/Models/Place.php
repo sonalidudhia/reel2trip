@@ -16,7 +16,10 @@ class Place extends Model
         'selected' => 'boolean',
     ];
 
-    /** must_do only makes sense for a place you're actually visiting. */
+    public const CATEGORY_TIP = 'tip';
+
+    private const GOOGLE_MAPS_SEARCH = 'https://www.google.com/maps/search/';
+
     protected static function booted(): void
     {
         static::saving(function (Place $place) {
@@ -43,7 +46,34 @@ class Place extends Model
         return $this->lat !== null && $this->lng !== null;
     }
 
-    /** "€" to "€€€€" from Google's 0-4 price level. */
+    public function isTip(): bool
+    {
+        return $this->category === self::CATEGORY_TIP;
+    }
+
+    public function hasMapsLocation(): bool
+    {
+        return $this->isEnriched() || $this->google_place_id !== null;
+    }
+
+    public function mapsUrl(?string $cityName = null): ?string
+    {
+        if ($this->isTip() || ! $this->hasMapsLocation()) {
+            return null;
+        }
+
+        $parameters = $this->google_place_id === null
+            ? ['api' => 1, 'query' => $this->searchableName($cityName)]
+            : ['api' => 1, 'query' => $this->name, 'query_place_id' => $this->google_place_id];
+
+        return self::GOOGLE_MAPS_SEARCH.'?'.http_build_query($parameters);
+    }
+
+    public function searchableName(?string $cityName = null): string
+    {
+        return implode(', ', array_filter([$this->name, $cityName]));
+    }
+
     public function priceLabel(): ?string
     {
         return $this->price_level === null
