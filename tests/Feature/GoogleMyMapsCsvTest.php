@@ -3,25 +3,10 @@
 use App\Exports\ExportablePlaces;
 use App\Exports\GoogleMyMapsCsv;
 use App\Filament\Pages\VisitingPlaces;
-use App\Models\Reel;
-use App\Models\Trip;
 use App\Models\User;
 use Filament\Actions\Testing\TestAction;
 use Livewire\Livewire;
 use Symfony\Component\HttpFoundation\StreamedResponse;
-
-function makeExportTrip(User $user, string $cityName = 'Barcelona'): array
-{
-    $trip = Trip::create(['user_id' => $user->id, 'name' => 'Spain']);
-    $city = $trip->tripCities()->create(['name' => $cityName, 'country' => 'Spain', 'days' => 3, 'position' => 0]);
-    $reel = $trip->reels()->create([
-        'url' => 'https://instagram.com/reel/'.uniqid(),
-        'shortcode' => uniqid(),
-        'status' => Reel::STATUS_DONE,
-    ]);
-
-    return [$trip, $city, $reel];
-}
 
 function csvFor(User $user, ?int $cityId = null): string
 {

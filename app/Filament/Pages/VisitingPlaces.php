@@ -3,6 +3,7 @@
 namespace App\Filament\Pages;
 
 use App\Exports\ExportablePlaces;
+use App\Exports\GoogleEarthKml;
 use App\Exports\GoogleMyMapsCsv;
 use App\Models\Place;
 use App\Models\Trip;
@@ -56,6 +57,21 @@ class VisitingPlaces extends Page
                         ->helperText('Import the CSV at mymaps.google.com, then Create a new map and choose Import. Pick Latitude and Longitude as the position columns and Name as the title column.'),
                 ])
                 ->action(fn (array $data): StreamedResponse => $this->exportCsv($data['trip_city_id'] ?? null)),
+
+            Action::make('exportKml')
+                ->label('Export KML')
+                ->icon('heroicon-m-globe-alt')
+                ->color('gray')
+                ->modalHeading('Export KML')
+                ->modalSubmitActionLabel('Download KML')
+                ->schema([
+                    Select::make('trip_city_id')
+                        ->label('City')
+                        ->options(fn () => $this->exportCityOptions())
+                        ->placeholder('All cities')
+                        ->helperText('A KML opens in Google Earth and imports into My Maps. Only places with coordinates carry a pin.'),
+                ])
+                ->action(fn (array $data): StreamedResponse => $this->exportKml($data['trip_city_id'] ?? null)),
         ];
     }
 
@@ -73,6 +89,11 @@ class VisitingPlaces extends Page
     public function exportCsv(int|string|null $tripCityId): StreamedResponse
     {
         return (new GoogleMyMapsCsv($this->exportablePlaces($tripCityId)))->response();
+    }
+
+    public function exportKml(int|string|null $tripCityId): StreamedResponse
+    {
+        return (new GoogleEarthKml($this->exportablePlaces($tripCityId)))->response();
     }
 
     private function exportablePlaces(int|string|null $tripCityId): ExportablePlaces

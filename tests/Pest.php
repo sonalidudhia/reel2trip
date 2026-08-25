@@ -1,5 +1,9 @@
 <?php
 
+use App\Models\Reel;
+use App\Models\Trip;
+use App\Models\TripCity;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -44,7 +48,16 @@ expect()->extend('toBeOne', function () {
 |
 */
 
-function something()
+/** @return array{0: Trip, 1: TripCity, 2: Reel} */
+function makeExportTrip(User $user, string $cityName = 'Barcelona'): array
 {
-    // ..
+    $trip = Trip::create(['user_id' => $user->id, 'name' => 'Spain']);
+    $city = $trip->tripCities()->create(['name' => $cityName, 'country' => 'Spain', 'days' => 3, 'position' => 0]);
+    $reel = $trip->reels()->create([
+        'url' => 'https://instagram.com/reel/'.uniqid(),
+        'shortcode' => uniqid(),
+        'status' => Reel::STATUS_DONE,
+    ]);
+
+    return [$trip, $city, $reel];
 }
