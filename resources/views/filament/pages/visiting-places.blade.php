@@ -38,6 +38,11 @@
         </x-filament::button>
     </div>
 
+    <p class="-mt-4 text-sm text-gray-500 dark:text-gray-400">
+        Import the CSV at <a href="https://mymaps.google.com" target="_blank" rel="noopener noreferrer" class="text-primary-600 underline dark:text-primary-400">mymaps.google.com</a> &rarr; Create a new map &rarr; Import.
+        Choose Latitude/Longitude as position columns and Name as the title column.
+    </p>
+
     @forelse ($this->cities as $city)
         <x-filament::section
             :heading="$city['name']"

@@ -53,8 +53,7 @@ class VisitingPlaces extends Page
                     Select::make('trip_city_id')
                         ->label('City')
                         ->options(fn () => $this->exportCityOptions())
-                        ->placeholder('All cities')
-                        ->helperText('Import the CSV at mymaps.google.com, then Create a new map and choose Import. Pick Latitude and Longitude as the position columns and Name as the title column.'),
+                        ->placeholder('All cities'),
                 ])
                 ->action(fn (array $data): StreamedResponse => $this->exportCsv($data['trip_city_id'] ?? null)),
 
