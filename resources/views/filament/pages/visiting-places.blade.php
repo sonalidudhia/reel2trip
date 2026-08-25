@@ -1,5 +1,4 @@
 <x-filament-panels::page>
-    {{-- Controls --}}
     <div class="flex flex-col gap-3 sm:flex-row sm:items-end">
         <label class="flex-1">
             <span class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-200">Search</span>

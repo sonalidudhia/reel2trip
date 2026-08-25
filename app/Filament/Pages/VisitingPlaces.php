@@ -2,23 +2,22 @@
 
 namespace App\Filament\Pages;
 
+use App\Exports\ExportablePlaces;
+use App\Exports\GoogleMyMapsCsv;
 use App\Models\Place;
 use App\Models\Trip;
 use App\Models\TripCity;
 use App\Support\PlaceCategories;
 use BackedEnum;
+use Filament\Actions\Action;
+use Filament\Forms\Components\Select;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
-/**
- * Everywhere you're actually visiting, as a nested list you can plan days from:
- * city -> category (or day) -> places. Deliberately not a Filament table — a
- * table can only group one level deep, and the whole point here is the second
- * level.
- */
 class VisitingPlaces extends Page
 {
     protected string $view = 'filament.pages.visiting-places';
@@ -29,18 +28,60 @@ class VisitingPlaces extends Page
 
     protected static ?int $navigationSort = 2;
 
-    /** Empty string = every trip. */
     public string $tripId = '';
 
     public bool $mustDoOnly = false;
 
-    /** category | day */
     public string $groupBy = 'category';
 
     public string $search = '';
 
     /** @var array<int, string> */
     protected $queryString = ['tripId', 'mustDoOnly', 'groupBy', 'search'];
+
+    /** @return array<int, Action> */
+    protected function getHeaderActions(): array
+    {
+        return [
+            Action::make('exportCsv')
+                ->label('Export for Google My Maps')
+                ->icon('heroicon-m-arrow-down-tray')
+                ->modalHeading('Export for Google My Maps')
+                ->modalSubmitActionLabel('Download CSV')
+                ->schema([
+                    Select::make('trip_city_id')
+                        ->label('City')
+                        ->options(fn () => $this->exportCityOptions())
+                        ->placeholder('All cities')
+                        ->helperText('Import the CSV at mymaps.google.com, then Create a new map and choose Import. Pick Latitude and Longitude as the position columns and Name as the title column.'),
+                ])
+                ->action(fn (array $data): StreamedResponse => $this->exportCsv($data['trip_city_id'] ?? null)),
+        ];
+    }
+
+    /** @return array<int, string> */
+    public function exportCityOptions(): array
+    {
+        return TripCity::query()
+            ->whereHas('trip', fn (Builder $query) => $query->where('user_id', auth()->id()))
+            ->when($this->tripId !== '', fn (Builder $query) => $query->where('trip_id', $this->tripId))
+            ->orderBy('position')
+            ->pluck('name', 'id')
+            ->all();
+    }
+
+    public function exportCsv(int|string|null $tripCityId): StreamedResponse
+    {
+        return (new GoogleMyMapsCsv($this->exportablePlaces($tripCityId)))->response();
+    }
+
+    private function exportablePlaces(int|string|null $tripCityId): ExportablePlaces
+    {
+        return new ExportablePlaces(
+            (int) auth()->id(),
+            $tripCityId === null || $tripCityId === '' ? null : (int) $tripCityId,
+        );
+    }
 
     /** @return array<int|string, string> */
     public function getTripOptionsProperty(): array
@@ -76,8 +117,6 @@ class VisitingPlaces extends Page
             ->orderBy('name')
             ->get();
 
-        // Keyed separately rather than eager-loaded: trip_city_id is nullable,
-        // and a lookup keeps "no city" an honest null instead of a relation.
         $cities = TripCity::query()
             ->whereKey($places->pluck('trip_city_id')->filter()->unique())
             ->get()
@@ -85,7 +124,7 @@ class VisitingPlaces extends Page
             ->all();
 
         return $places
-            ->groupBy(fn (Place $place) => (int) $place->trip_city_id) // null -> 0, the "unassigned" bucket
+            ->groupBy(fn (Place $place) => (int) $place->trip_city_id)
             ->sortBy(fn (Collection $group, int $key) => isset($cities[$key]) ? $cities[$key]->position : PHP_INT_MAX)
             ->map(function (Collection $group, int $key) use ($cities) {
                 $city = $cities[$key] ?? null;
@@ -113,7 +152,6 @@ class VisitingPlaces extends Page
         if ($this->groupBy === 'day') {
             $byDay = $places->groupBy(fn (Place $place) => $place->planned_day ?: 0);
 
-            // Always render every day the city has, so empty days read as "still to fill".
             $days = collect(range(1, max($cityDays, (int) $places->max('planned_day'), 1)))
                 ->map(fn (int $day) => [
                     'key' => "day-{$day}",
@@ -168,7 +206,6 @@ class VisitingPlaces extends Page
             ->send();
     }
 
-    /** Never trust an id off the wire — re-scope it to the signed-in user. */
     protected function ownedPlace(int $placeId): Place
     {
         return Place::query()
