@@ -2,6 +2,8 @@
 
 namespace App\Support;
 
+use App\Models\Place;
+
 /**
  * The six categories the extractor emits, in the order they're shown when
  * planning a city: what you go see first, then where you eat around it.
@@ -40,6 +42,12 @@ class PlaceCategories
     public static function options(): array
     {
         return self::LABELS;
+    }
+
+    /** @return array<string, string> */
+    public static function optionsExcludingTips(): array
+    {
+        return array_diff_key(self::LABELS, [Place::CATEGORY_TIP => null]);
     }
 
     public static function color(?string $category): string

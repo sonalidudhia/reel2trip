@@ -12,6 +12,7 @@ class ExportablePlaces
     public function __construct(
         private readonly int $userId,
         private readonly ?int $tripCityId = null,
+        private readonly ?string $category = null,
     ) {}
 
     /** @return Collection<int, Place> */
@@ -23,6 +24,7 @@ class ExportablePlaces
             ->where('category', '!=', Place::CATEGORY_TIP)
             ->whereHas('reel.trip', fn (Builder $query) => $query->where('user_id', $this->userId))
             ->when($this->tripCityId !== null, fn (Builder $query) => $query->where('trip_city_id', $this->tripCityId))
+            ->when($this->category !== null, fn (Builder $query) => $query->where('category', $this->category))
             ->with(['tripCity', 'reel:id,url'])
             ->orderBy('trip_city_id')
             ->orderByDesc('must_do')
@@ -46,11 +48,13 @@ class ExportablePlaces
     {
         $city = $this->city();
 
-        return sprintf(
-            'reel2trip-%s-%s.%s',
-            $city === null ? 'all' : str($city->name)->slug(),
+        $parts = array_filter([
+            'reel2trip',
+            $city === null ? 'all' : str($city->name)->slug()->value(),
+            $this->category,
             now()->format('Y-m-d'),
-            $extension,
-        );
+        ]);
+
+        return implode('-', $parts).'.'.$extension;
     }
 }

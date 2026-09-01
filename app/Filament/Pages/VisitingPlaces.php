@@ -54,8 +54,12 @@ class VisitingPlaces extends Page
                         ->label('City')
                         ->options(fn () => $this->exportCityOptions())
                         ->placeholder('All cities'),
+                    Select::make('category')
+                        ->label('Category')
+                        ->options(PlaceCategories::optionsExcludingTips())
+                        ->placeholder('Every category'),
                 ])
-                ->action(fn (array $data): StreamedResponse => $this->exportCsv($data['trip_city_id'] ?? null)),
+                ->action(fn (array $data): StreamedResponse => $this->exportCsv($data['trip_city_id'] ?? null, $data['category'] ?? null)),
 
             Action::make('exportKml')
                 ->label('Export KML')
@@ -69,8 +73,12 @@ class VisitingPlaces extends Page
                         ->options(fn () => $this->exportCityOptions())
                         ->placeholder('All cities')
                         ->helperText('A KML opens in Google Earth and imports into My Maps. Only places with coordinates carry a pin.'),
+                    Select::make('category')
+                        ->label('Category')
+                        ->options(PlaceCategories::optionsExcludingTips())
+                        ->placeholder('Every category'),
                 ])
-                ->action(fn (array $data): StreamedResponse => $this->exportKml($data['trip_city_id'] ?? null)),
+                ->action(fn (array $data): StreamedResponse => $this->exportKml($data['trip_city_id'] ?? null, $data['category'] ?? null)),
         ];
     }
 
@@ -85,21 +93,22 @@ class VisitingPlaces extends Page
             ->all();
     }
 
-    public function exportCsv(int|string|null $tripCityId): StreamedResponse
+    public function exportCsv(int|string|null $tripCityId, ?string $category = null): StreamedResponse
     {
-        return (new GoogleMyMapsCsv($this->exportablePlaces($tripCityId)))->response();
+        return (new GoogleMyMapsCsv($this->exportablePlaces($tripCityId, $category)))->response();
     }
 
-    public function exportKml(int|string|null $tripCityId): StreamedResponse
+    public function exportKml(int|string|null $tripCityId, ?string $category = null): StreamedResponse
     {
-        return (new GoogleEarthKml($this->exportablePlaces($tripCityId)))->response();
+        return (new GoogleEarthKml($this->exportablePlaces($tripCityId, $category)))->response();
     }
 
-    private function exportablePlaces(int|string|null $tripCityId): ExportablePlaces
+    private function exportablePlaces(int|string|null $tripCityId, ?string $category): ExportablePlaces
     {
         return new ExportablePlaces(
             (int) auth()->id(),
             $tripCityId === null || $tripCityId === '' ? null : (int) $tripCityId,
+            $category === '' ? null : $category,
         );
     }
 
