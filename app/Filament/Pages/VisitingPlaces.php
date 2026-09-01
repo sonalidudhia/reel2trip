@@ -37,8 +37,10 @@ class VisitingPlaces extends Page
 
     public string $search = '';
 
+    public string $category = '';
+
     /** @var array<int, string> */
-    protected $queryString = ['tripId', 'mustDoOnly', 'groupBy', 'search'];
+    protected $queryString = ['tripId', 'mustDoOnly', 'groupBy', 'search', 'category'];
 
     /** @return array<int, Action> */
     protected function getHeaderActions(): array
@@ -57,6 +59,7 @@ class VisitingPlaces extends Page
                     Select::make('category')
                         ->label('Category')
                         ->options(PlaceCategories::optionsExcludingTips())
+                        ->default($this->category ?: null)
                         ->placeholder('Every category'),
                 ])
                 ->action(fn (array $data): StreamedResponse => $this->exportCsv($data['trip_city_id'] ?? null, $data['category'] ?? null)),
@@ -76,6 +79,7 @@ class VisitingPlaces extends Page
                     Select::make('category')
                         ->label('Category')
                         ->options(PlaceCategories::optionsExcludingTips())
+                        ->default($this->category ?: null)
                         ->placeholder('Every category'),
                 ])
                 ->action(fn (array $data): StreamedResponse => $this->exportKml($data['trip_city_id'] ?? null, $data['category'] ?? null)),
@@ -134,6 +138,7 @@ class VisitingPlaces extends Page
             ->whereHas('reel.trip', fn (Builder $query) => $query->where('user_id', auth()->id()))
             ->when($this->tripId !== '', fn (Builder $query) => $query->whereHas('reel', fn (Builder $r) => $r->where('trip_id', $this->tripId)))
             ->when($this->mustDoOnly, fn (Builder $query) => $query->where('must_do', true))
+            ->when($this->category !== '', fn (Builder $query) => $query->where('category', $this->category))
             ->when($this->search !== '', function (Builder $query) {
                 $term = '%'.$this->search.'%';
                 $query->where(fn (Builder $q) => $q

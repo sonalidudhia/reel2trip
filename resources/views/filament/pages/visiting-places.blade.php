@@ -20,6 +20,18 @@
         </label>
 
         <label class="sm:w-48">
+            <span class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-200">Category</span>
+            <x-filament::input.wrapper>
+                <x-filament::input.select wire:model.live="category">
+                    <option value="">All categories</option>
+                    @foreach (\App\Support\PlaceCategories::options() as $value => $label)
+                        <option value="{{ $value }}">{{ $label }}</option>
+                    @endforeach
+                </x-filament::input.select>
+            </x-filament::input.wrapper>
+        </label>
+
+        <label class="sm:w-48">
             <span class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-200">Group by</span>
             <x-filament::input.wrapper>
                 <x-filament::input.select wire:model.live="groupBy">
