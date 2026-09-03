@@ -2,7 +2,6 @@
 
 namespace App\Filament\Resources\Places\Tables;
 
-use App\Filament\Resources\Reels\ReelResource;
 use App\Models\Place;
 use App\Models\TripCity;
 use App\Support\PlaceCategories;
@@ -11,6 +10,7 @@ use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\Select;
+use Filament\Support\Enums\IconPosition;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\ToggleColumn;
 use Filament\Tables\Filters\SelectFilter;
@@ -45,16 +45,14 @@ class PlacesTable
                     ->color('gray')
                     ->placeholder('Unassigned')
                     ->sortable(),
-                // Without this the link only runs one way — a reel's page lists its
-                // places, but a place never says where it came from.
                 TextColumn::make('reel.shortcode')
                     ->label('From reel')
-                    ->icon('heroicon-m-film')
+                    ->icon('heroicon-m-arrow-top-right-on-square')
+                    ->iconPosition(IconPosition::After)
                     ->color('primary')
-                    ->url(fn (Place $record) => $record->reel
-                        ? ReelResource::getUrl('view', ['record' => $record->reel])
-                        : null)
-                    ->tooltip('Open the reel this place was extracted from')
+                    ->url(fn (Place $record) => $record->reel?->url)
+                    ->openUrlInNewTab()
+                    ->tooltip('Open this place\'s reel on Instagram')
                     ->searchable()
                     ->placeholder('—'),
                 TextColumn::make('rating')

@@ -8,6 +8,7 @@ use App\Models\Trip;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\ViewAction;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Notifications\Notification;
@@ -137,6 +138,10 @@ class ReelsTable
                     }),
             ])
             ->recordActions([
+                ViewAction::make()
+                    ->label('Transcript')
+                    ->icon('heroicon-m-document-text')
+                    ->color('gray'),
                 Action::make('retry')
                     ->icon('heroicon-m-arrow-path')
                     ->color('warning')
