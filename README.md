@@ -8,6 +8,10 @@ per-reel cost, nothing sent to a model provider.
 
 ![reel2trip: opening a place's source reel on Instagram, and the place it produced](docs/demo.gif)
 
+**[Watch the full demo (84s)](docs/full-demo.mp4)** — dashboard, trips, pasting a
+reel, the pipeline running, the transcript, the Instagram post it came from,
+and the must-do list it ends up in.
+
 ## What it does
 
 ```
