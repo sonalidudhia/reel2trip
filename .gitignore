@@ -28,3 +28,6 @@ Thumbs.db
 
 # Demo recordings, renders and the helper script that builds them — local only.
 /demo/
+
+/.claude/skills/
+/.agents/skills/
